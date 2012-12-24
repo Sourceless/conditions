@@ -1,13 +1,62 @@
+""" conditions: a Python module providing decorators for type signatures, pre- and postconditions.
+
+    This module implements the following decorator classes:
+        * type_signature - type-checking function inputs
+        * precondition   - checking validity of function inputs
+        * postcondition  - checking validity of function outputs
+
+    Author: Laurence Joseph Smith
+    GitHub: Sourceless
+    Email : laurence@sourceless.org
+            ljs551@york.ac.uk
+"""
+
 import inspect
 
-
 class type_signature():
+    """ A decorator used for type-checking.
+        
+        This class implements a decorator for type signatures, in order
+        to check types of function inputs. Usual use:
+
+            @type_signature(argument1=type, argument2=type)
+            def func(argument1, argument2):
+                ...
+        
+        Ensure the keywords used in the type signature match the argument
+        names for the function, or they won't be checked.
+
+        A TypeError will be raised if the types of the arguments func is
+        called with don't match the types given as arguments to the 
+        decorator.
+
+        If you want to allow more than one type for a given argument, pass
+        in a tuple of types as opposed to a plain old type:
+
+            @type_signature(argument1=(type1, type2, type3))
+            def func(argument1):
+                ...
+
+        This way argument1 in the above function may only be of the types
+        in the tuple (else a TypeError will be raised, as previously).
+
+        The current limitation is that you can only have one type signature
+        per function (you may however be able to stack similar signatures).
+        This functionality may be implemented in future if there are any
+        uses for it. Contact me to let me know if you have one.
+
+    """
+
     def __init__(self, **signature):
+        """ Initialise by storing signature kwargs as instance attribute """
         self.signature = signature # By using keyword args we can match
                                    # the arg names, meaning we can use
                                    # dicts without worrying too much
 
     def __call__(self, f):
+        """ Check argument types given for f against types stored in signature,
+            raise a TypeError if a type does not match.
+        """
         def wrapped_f(*args, **kwargs):
             argspec = inspect.getargspec(f).args # Get the names of f's args
             
@@ -44,7 +93,31 @@ class type_signature():
 
 
 class precondition():
-    pass
+    def __init__(self, **conditions):
+        self.conditions = conditions
+
+    def __call__(self, f):
+        def wrapped_f(*args, **kwargs):
+            argspec = inspect.getargspec(f).args
+            argspec = dict(zip(argspec, args))
+            argspec.update(kwargs)
+            
+            for key in argspec.keys():
+                if key not in self.conditions:
+                    del argspec[key]
+
+            for key, argument in argspec.iteritems():
+                if type(self.conditions[key]) is not tuple:
+                    self.conditions[key] = (self.conditions[key],)
+
+                print self.conditions[key]
+                for validation_func in self.conditions[key]:
+                    if not validation_func(argument):
+                        raise ValueError("Invalid input for " + key + " in " + 
+                                         f.__name__ + ".")
+            return f(*args, **kwargs)
+        return wrapped_f
+
 
 class postcondition():
     pass
@@ -52,7 +125,8 @@ class postcondition():
 
 # TO BE REMOVED -- TESTING ONLY
 def test():
-    @type_signature(something=str) 
+    @type_signature(nothing=list)
+    @precondition(something=(lambda s: len(s) > 5))
     def say(something, nothing=[]):
         print something
         return len(something)
