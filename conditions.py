@@ -29,14 +29,16 @@ class type_signature():
                 if type(rule) is not tuple: # convert single type vals to one-element tuples
                     rule = (rule,)          # to simplify if below. Dirty.
 
-                if not argtype in rule: # The type doesn't match pne in the signature
-                    raise TypeError("Incorrect argument type for `" + key + "` in `" + f.__name__ + "()`: should be " + ("one of " if len(rule) > 1 else "")  + ', '.join([ruletype.__name__ for ruletype in rule]) + " not " + argtype.__name__)
+                if not argtype in rule: # There's an incorrect type around here
+                    raise TypeError("Incorrect argument type for `" + key + 
+                                    "` in `" + f.__name__ + "()`: should be " + 
+                                    ("one of " if len(rule) > 1 else "")  + 
+                                    ', '.join([ruletype.__name__ for ruletype in rule]) + 
+                                    " not " + argtype.__name__)
             
             # And finally call the function
-            f(*args, **kwargs) # If the KeyError takes place, this will 
-                     # raise the 'takes at least x arguments' error,
-                     # however if the argument type error is raised
-                     # the function will exit
+            return f(*args, **kwargs) # Function can still fail but at this point
+                                      # That's the interpreter's responsibility
         
         return wrapped_f
 
@@ -53,12 +55,14 @@ def test():
     @type_signature(something=str) 
     def say(something, nothing=[]):
         print something
+        return len(something)
 
     a_string = "Hey lookie words"
     not_a_string = 42
     say(a_string)
     #say(not_a_string)
     say(a_string, nothing=6)
+    print say("")
 
 if __name__ == '__main__':
     test()
