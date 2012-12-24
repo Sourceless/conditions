@@ -110,11 +110,11 @@ class precondition():
                 if type(self.conditions[key]) is not tuple:
                     self.conditions[key] = (self.conditions[key],)
 
-                print self.conditions[key]
                 for validation_func in self.conditions[key]:
                     if not validation_func(argument):
-                        raise ValueError("Invalid input for " + key + " in " + 
-                                         f.__name__ + ".")
+                        raise ValueError("Invalid input for argument " + key + " in " + 
+                                         f.__name__ + ". Refer to docstring or" +
+                                         " module docs.\nInput:\n" + repr(argument))
             return f(*args, **kwargs)
         return wrapped_f
 
@@ -125,18 +125,16 @@ class postcondition():
 
 # TO BE REMOVED -- TESTING ONLY
 def test():
+    @precondition(something=(lambda s: len(s) < 5, lambda s: len(s) > 3), nothing=lambda l: len(l) < 6)
     @type_signature(nothing=list)
-    @precondition(something=(lambda s: len(s) > 5))
     def say(something, nothing=[]):
         print something
         return len(something)
 
-    a_string = "Hey lookie words"
-    not_a_string = 42
-    say(a_string)
-    #say(not_a_string)
-    say(a_string, nothing=6)
-    print say("")
+    a_string = "More than 5 chars long"
+    a_short_string = "No"
+    a_valid_string = "Three"
+    say(a_valid_string, 6)
 
 if __name__ == '__main__':
     test()
